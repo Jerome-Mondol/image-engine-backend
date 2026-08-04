@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Engine</title>
+</head>
+<body>
+    
+    <input id="folder" type="file" webkitdirectory multiple />
+
+    <button onclick="upload()">Upload</button>
+
+
+
+    <script>
+
+
+        const backendURL = 'http://localhost:5000'
+
+        const upload = async () => {
+    try {
+        const input = document.getElementById("folder");
+        const fileArr = Array.from(input.files);
+
+        console.log(fileArr);
+        console.log("Before get presigned URL");
+
+        const getUploadUrl = await fetch(`${backendURL}/api/v1/storage/presigned-url`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                files: fileArr.map(({ name, size, type, webkitRelativePath }) => ({
+                    name,
+                    contentType: type,
+                }))
+            })
+        });
+
+
+
+        console.log("After fetch completed");
+        const data = await getUploadUrl.json();
+        console.log(data.files[0])
+        uploadFile(fileArr, data.files);
+
+    } catch (error) {
+        console.error("Upload failed:", error);
+    }
+};
+
+        
+
+
+        const uploadFile = (fileArr, fileData) => {
+            console.log("Upload file running")
+                const uploadPromises = fileArr.map(async (file, i) => {
+                    const uploadURL = fileData[i].url;
+                    const resposne = await fetch(uploadURL, {
+                        method: "PUT",
+                        headers: {
+                            'Content-Type': file.type,
+                        },
+                        body: file,
+                    })
+                })
+
+                const uploadResult = Promise.all(uploadPromises);
+                console.log(uploadResult);
+
+                console.log("file upload to r2 done");
+            }
+
+    </script>
+
+</body>
+</html>
